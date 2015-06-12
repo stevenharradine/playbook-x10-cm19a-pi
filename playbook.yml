@@ -1,0 +1,55 @@
+- hosts: cm19a
+  vars:
+    bus: 001
+    device: 007
+  sudo: true
+  remote_user: pi
+
+  tasks:
+  - name: install software | apt
+    apt:
+      pkg: "{{ item }}"
+      state: latest
+    with_items:
+      - htop
+      - git
+      - python
+      - libusb-1.0-0
+
+  - name: create cm19a folder
+    file:
+      path: /home/pi/cm19a/
+      state: directory
+      mode: 0755
+
+  - name: create in/out
+    shell: "mkfifo /home/pi/cm19a/{{ item }}"
+    ignore_errors: yes
+    with_items:
+      - in
+      - out
+
+  - name: checkout 
+    git:
+      repo: https://github.com/walac/pyusb.git
+      dest: /home/pi/pyusb
+      version: master
+      force: yes
+
+  - name: Install PyUSB
+    sudo_user: root
+    shell: "cd /home/pi/pyusb && python setup.py install"
+
+  - name: cm19a server | cron
+    sudo_user: root
+    cron:
+      name: "cm19a server"
+      special_time: reboot
+      job: "python2 /home/pi/pyusb/pycm19a-pyusb0.py < /home/pi/cm19a/in > /home/pi/cm19a/out"
+
+  - name: 
+    file:
+      path: "/dev/bus/usb/{{ bus }}/{{ device }}"
+      state: directory
+      owner: pi
+      mode: 0600
