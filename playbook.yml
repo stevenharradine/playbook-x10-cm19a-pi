@@ -6,7 +6,7 @@
   remote_user: pi
 
   tasks:
-  - name: install software | apt
+  - name: Install software | apt
     apt:
       pkg: "{{ item }}"
       state: latest
@@ -16,22 +16,7 @@
       - python
       - libusb-1.0-0
 
-  - name: create cm19a folder
-    file:
-      path: /home/pi/pycm19a-0.1.3/cm19a/
-      state: directory
-      owner: pi
-      group: pi
-      mode: 0755
-
-  - name: create in/out
-    shell: "sudo -u pi mkfifo /home/pi/pycm19a-0.1.3/cm19a/{{ item }}"
-    ignore_errors: yes
-    with_items:
-      - in
-      - out
-
-  - name: checkout 
+  - name: Checkout PyUSB
     git:
       repo: https://github.com/walac/pyusb.git
       dest: /home/pi/pyusb
@@ -42,14 +27,36 @@
     sudo_user: root
     shell: "cd /home/pi/pyusb && python setup.py install"
 
+  - name: Checkout pycm19a driver
+    git:
+      repo: https://github.com/stevenharradine/pycm19a.git
+      dest: /home/pi/pycm19a
+      version: master
+      force: yes
+
+  - name: Create cm19a folder
+    file:
+      path: /home/pi/pycm19a/cm19a/
+      state: directory
+      owner: pi
+      group: pi
+      mode: 0755
+
+  - name: Create named pipes (in/out)
+    shell: "sudo -u pi mkfifo /home/pi/pycm19a/cm19a/{{ item }}"
+    ignore_errors: yes
+    with_items:
+      - in
+      - out
+
   - name: cm19a server | cron
     sudo_user: root
     cron:
       name: "cm19a server"
       special_time: reboot
-      job: "cd /home/pi/pycm19a-0.1.3  && python2 pycm19a-pyusb0.py < cm19a/in > cm19a/out && cat cm19a/out"
+      job: "cd /home/pi/pycm19a  && python2 pycm19a-pyusb0.py < cm19a/in > cm19a/out && cat cm19a/out"
 
-  - name: own USB device
+  - name: Own USB device
     file:
       path: "/dev/bus/usb/{{ bus }}/{{ device }}"
       state: directory
