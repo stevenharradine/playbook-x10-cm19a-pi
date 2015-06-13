@@ -54,7 +54,14 @@
     cron:
       name: "cm19a server"
       special_time: reboot
-      job: "cd /home/pi/pycm19a  && python2 pycm19a-pyusb0.py < cm19a/in > cm19a/out && cat cm19a/out"
+      job: "sudo /usr/bin/python2 /home/pi/pycm19a/pycm19a-pyusb0.py < /home/pi/pycm19a/cm19a/in > /home/pi/pycm19a/cm19a/out"
+
+  - name: cm19a | pipe joining | cron
+    sudo_user: root
+    cron:
+      name: "cm19a server pipe joining"
+      special_time: reboot
+      job: "cat /home/pi/pycm19a/cm19a/out"
 
   - name: Own USB device
     file:
