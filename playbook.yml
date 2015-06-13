@@ -1,7 +1,7 @@
 - hosts: cm19a
   vars:
     bus: 001
-    device: 007
+    device: 004
   sudo: true
   remote_user: pi
 
@@ -18,12 +18,14 @@
 
   - name: create cm19a folder
     file:
-      path: /home/pi/cm19a/
+      path: /home/pi/pycm19a-0.1.3/cm19a/
       state: directory
+      owner: pi
+      group: pi
       mode: 0755
 
   - name: create in/out
-    shell: "mkfifo /home/pi/cm19a/{{ item }}"
+    shell: "sudo -u pi mkfifo /home/pi/pycm19a-0.1.3/cm19a/{{ item }}"
     ignore_errors: yes
     with_items:
       - in
@@ -45,9 +47,9 @@
     cron:
       name: "cm19a server"
       special_time: reboot
-      job: "python2 /home/pi/pyusb/pycm19a-pyusb0.py < /home/pi/cm19a/in > /home/pi/cm19a/out"
+      job: "cd /home/pi/pycm19a-0.1.3  && python2 pycm19a-pyusb0.py < cm19a/in > cm19a/out && cat cm19a/out"
 
-  - name: 
+  - name: own USB device
     file:
       path: "/dev/bus/usb/{{ bus }}/{{ device }}"
       state: directory
