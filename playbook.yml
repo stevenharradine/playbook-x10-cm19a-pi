@@ -1,7 +1,4 @@
 - hosts: cm19a
-  vars:
-    bus: 001
-    device: 004
   sudo: true
   remote_user: pi
 
@@ -75,7 +72,7 @@
 
   - name: Own USB device
     file:
-      path: "/dev/bus/usb/{{ bus }}/{{ device }}"
+      path: "/dev/bus/usb/`lsusb | grep X10 | awk '{ print $2 }'`/`lsusb | grep X10 | awk '{ print $4 }' | cut -d':' -f 1`"
       state: directory
       owner: pi
       mode: 0600
