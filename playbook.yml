@@ -15,6 +15,16 @@
       - git
       - python
       - libusb-1.0-0
+      - nodejs
+      - npm
+
+  - name: symlink node
+    file:
+      src: /usr/bin/nodejs
+      dest: /usr/bin/node
+      owner: www-data
+      group: www-data
+      state: link
 
   - name: Checkout PyUSB
     git:
@@ -54,7 +64,7 @@
     cron:
       name: "cm19a server"
       special_time: reboot
-      job: "sudo /usr/bin/python2 /home/pi/pycm19a/pycm19a-pyusb0.py < /home/pi/pycm19a/cm19a/in > /home/pi/pycm19a/cm19a/out"
+      job: "sudo python2 /home/pi/pycm19a/pycm19a-pyusb0.py < /home/pi/pycm19a/cm19a/in > /home/pi/pycm19a/cm19a/out"
 
   - name: cm19a | pipe joining | cron
     sudo_user: root
@@ -69,3 +79,17 @@
       state: directory
       owner: pi
       mode: 0600
+
+  - name: Checkout cm19a service
+    git:
+      repo: https://github.com/stevenharradine/service-cm19a.git
+      dest: /home/pi/service-cm19a
+      version: master
+      force: yes
+
+  - name: remote service | cm19a | cron
+    sudo_user: root
+    cron:
+      name: "cm19a remote service"
+      special_time: reboot
+      job: "node /home/pi/service-cm19a/app.js"
