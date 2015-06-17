@@ -1,6 +1,8 @@
 - hosts: cm19a
-  sudo: true
   remote_user: pi
+  vars:
+    haproxy_repository_source: https://packages.raspberry-hosting.com/haproxy-raspberry-pi/
+    haproxy_package_name: haproxy_1.5.12-1_armhf.deb
 
   tasks:
   - name: Install software | apt
@@ -14,6 +16,52 @@
       - libusb-1.0-0
       - nodejs
       - npm
+
+  - name: install haproxy
+    sudo: true
+    sudo_user: root
+    ignore_errors: yes
+    command: "{{ item }}"
+    with_items:
+      - "wget {{ haproxy_repository_source }}{{ haproxy_package_name }} -O /tmp/{{ haproxy_package_name }} --no-check-certificate"
+      - "dpkg -i /tmp/{{ haproxy_package_name }}"
+      - "wget {{ haproxy_repository_source }}etc/init.d/haproxy -O /etc/init.d/haproxy --no-check-certificate"
+      - chmod +x /etc/init.d/haproxy
+      - update-rc.d haproxy defaults
+      - adduser --group --system --no-create-home --disabled-password --disabled-login haproxy
+
+  - name: Copy haproxy config
+    sudo: true
+    sudo_user: root
+    copy:
+      src: files/haproxy.cfg
+      dest: /etc/haproxy/haproxy.cfg
+      owner: root
+      group: root
+
+  # - name: enable haproxy
+  #   sudo: true
+  #   sudo_user: root
+  #   lineinfile:
+  #     dest: /etc/default/haproxy
+  #     regexp: ^ENABLED=
+  #     line: ENABLED=1
+
+  - name: create combined ssl.pem
+    sudo: true
+    sudo_user: root
+    ignore_errors: yes
+    command: "{{ item }}"
+    with_items:
+      - rm /etc/haproxy/ssl.pem
+      - touch /etc/haproxy/ssl.pem
+      - sudo bash -c 'cat /home/pi/server.key >> /etc/haproxy/ssl.pem'
+      - sudo bash -c 'cat /home/pi/server.crt >> /etc/haproxy/ssl.pem'
+
+  - name: restart haproxy
+    service:
+      name: haproxy
+      state: restarted
 
   - name: symlink node
     file:
@@ -71,6 +119,7 @@
       job: "cat /home/pi/pycm19a/cm19a/out"
 
   - name: Own USB device
+    sudo: true
     file:
       path: "/dev/bus/usb/`lsusb | grep X10 | awk '{ print $2 }'`/`lsusb | grep X10 | awk '{ print $4 }' | cut -d':' -f 1`"
       state: directory
