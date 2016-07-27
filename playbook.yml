@@ -18,8 +18,8 @@
       - npm
 
   - name: install haproxy
-    sudo: true
-    sudo_user: root
+    become: yes
+    become_user: root
     ignore_errors: yes
     command: "{{ item }}"
     with_items:
@@ -31,8 +31,8 @@
       - adduser --group --system --no-create-home --disabled-password --disabled-login haproxy
 
   - name: Copy haproxy config
-    sudo: true
-    sudo_user: root
+    become: yes
+    become_user: root
     copy:
       src: files/haproxy.cfg
       dest: /etc/haproxy/haproxy.cfg
@@ -48,8 +48,8 @@
   #     line: ENABLED=1
 
   - name: create combined ssl.pem
-    sudo: true
-    sudo_user: root
+    become: yes
+    become_user: root
     ignore_errors: yes
     command: "{{ item }}"
     with_items:
@@ -79,7 +79,8 @@
       force: yes
 
   - name: Install PyUSB
-    sudo_user: root
+    become: yes
+    become_user: root
     shell: "cd /home/pi/pyusb && python setup.py install"
 
   - name: Checkout pycm19a driver
@@ -105,21 +106,24 @@
       - out
 
   - name: cm19a server | cron
-    sudo_user: root
+    become: yes
+    become_user: root
     cron:
       name: "cm19a server"
       special_time: reboot
       job: "sudo python2 /home/pi/pycm19a/pycm19a-pyusb0.py < /home/pi/pycm19a/cm19a/in > /home/pi/pycm19a/cm19a/out"
 
   - name: cm19a | pipe joining | cron
-    sudo_user: root
+    become: yes
+    become_user: root
     cron:
       name: "cm19a server pipe joining"
       special_time: reboot
       job: "cat /home/pi/pycm19a/cm19a/out"
 
   - name: Own USB device
-    sudo: true
+    become: yes
+    become_user: root
     file:
       path: "/dev/bus/usb/`lsusb | grep X10 | awk '{ print $2 }'`/`lsusb | grep X10 | awk '{ print $4 }' | cut -d':' -f 1`"
       state: directory
@@ -134,8 +138,27 @@
       force: yes
 
   - name: remote service | cm19a | cron
-    sudo_user: root
+    become: yes
+    become_user: root
     cron:
       name: "cm19a remote service"
       special_time: reboot
-      job: "node /home/pi/service-cm19a/app.js"
+      job: "/usr/bin/nodejs /home/pi/service-cm19a/app.js"
+  - name: remote service | haproxy | cron
+    become: yes
+    become_user: root
+    cron:
+      name: "haproxy service"
+      special_time: reboot
+      job: "/usr/local/sbin/haproxy -f /etc/haproxy/haproxy.cfg"
+  - name: remote service | mounts (need to convert to fstab) | cron
+    become: yes
+    become_user: root
+    cron:
+      name: "{{ item.name }}"
+      special_time: reboot
+      job: "{{ item.job }}"
+    with_items:
+      - {name: "sda", job: "/bin/mount /dev/sda1 /home/pi/sda"}
+      - {name: "sdb", job: "/bin/mount /dev/sdb1 /home/pi/sdb"}
+
