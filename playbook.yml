@@ -1,8 +1,8 @@
 - hosts: cm19a
   remote_user: pi
   vars:
-    haproxy_repository_source: https://packages.raspberry-hosting.com/haproxy-raspberry-pi/
-    haproxy_package_name: haproxy_1.5.12-1_armhf.deb
+    haproxy_repository_source: https://github.com/stevenharradine/playbook-x10-cm19a-pi/blob/master/files/
+    haproxy_package_name: haproxy_1.5.10-1_armhf.deb
 
   tasks:
   - name: Install software | apt
